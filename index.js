@@ -9,39 +9,88 @@ const textureLoader = new THREE.TextureLoader();
 
 let milkywayTexture = textureLoader.load("./assets/milky-way.jpg");
 let sunTexture = textureLoader.load("./assets/sun.jpg");
-let mercuryTexture = textureLoader.load("./assets/mercury.jpg");
-let venusTexture = textureLoader.load("./assets/venus.jpg");
-let earthTexture = textureLoader.load("./assets/earth-day.jpg");
+let mercuryTexture = textureLoader.load("./assets/solar-system/mercurymap.jpg");
+let mercuryBumpsTexture = textureLoader.load(
+  "./assets/solar-system/mercurybump.jpg"
+);
+
+let venusTexture = textureLoader.load("./assets/solar-system/venusmap.jpg");
+let venusBumpsTexture = textureLoader.load(
+  "./assets/solar-system/venusbump.jpg"
+);
+
+let earthTexture = textureLoader.load("./assets/solar-system/earthmap1k.jpg");
 let earthNormal = textureLoader.load("./assets/earth-normal.tif");
-let moonTexture = textureLoader.load("./assets/moon.jpg");
-let marsTexture = textureLoader.load("./assets/mars.jpg");
-let jupiterTexture = textureLoader.load("./assets/jupiter.jpg");
-let saturnTexture = textureLoader.load("./assets/saturn.jpg");
-let saturnRingTexture = textureLoader.load("./assets/saturn-ring.png");
+let earthBumpsTexture = textureLoader.load(
+  "./assests/solar-system/earthbump1k.jpg"
+);
+
+let moonTexture = textureLoader.load("./assets/solar-system/moonmap1k.jpg");
+let moonBumpsTexture = textureLoader.load(
+  "./assets/solar-system/moonbump1k.jpg"
+);
+
+let marsTexture = textureLoader.load("./assets/solar-system/mars_1k_color.jpg");
+let marsBumpsTexture = textureLoader.load(
+  "./assets/solar-system/marsbump1k.jpg"
+);
+
+let jupiterTexture = textureLoader.load("./assets/solar-system/jupitermap.jpg");
+let saturnTexture = textureLoader.load("./assets/solar-system/saturnmap.jpg");
+let saturnRingTexture = textureLoader.load(
+  "./assets//solar-system/saturnringcolor.jpg"
+);
 let uranusTexture = textureLoader.load("./assets/uranus.jpg");
 let neptuneTexture = textureLoader.load("./assets/neptune.jpg");
 
 let x = -1.5;
 let planetsData = [
-  { name: "Sun", radius: 5, x: 6, y: 0, z: 0, texture: sunTexture },
+  { name: "Sun", radius: 5, texture: sunTexture },
   {
     name: "Mercury",
     radius: 0.5,
-    x: -1.5,
-    y: 0,
-    z: 0,
     texture: mercuryTexture,
+    bumpTexture: mercuryBumpsTexture,
   },
-  { name: "Venus", radius: 0.5, x: -3, y: 0, z: 0, texture: venusTexture },
-  { name: "Earth", radius: 0.8, x: -4.8, y: 0, z: 0, texture: earthTexture },
-  { name: "Mars", radius: 0.8, x: -7, y: 0, z: 0, texture: marsTexture },
+  {
+    name: "Venus",
+    radius: 0.5,
+    texture: venusTexture,
+    bumpTexture: venusBumpsTexture,
+  },
+  {
+    name: "Earth",
+    radius: 0.8,
+    texture: earthTexture,
+    bumpTexture: earthBumpsTexture,
+    normalTexture: earthNormal,
+  },
+  {
+    name: "Mars",
+    radius: 0.8,
+    texture: marsTexture,
+
+    bumpTexture: marsBumpsTexture,
+  },
   {
     name: "Jupiter",
     radius: 1.5,
-    x: -10.5,
-    y: 0,
-    z: 0,
     texture: jupiterTexture,
+  },
+  {
+    name: "Saturn",
+    radius: 1,
+    texture: saturnTexture,
+  },
+  {
+    name: "Uranus",
+    radius: 1,
+    texture: uranusTexture,
+  },
+  {
+    name: "Neptune",
+    radius: 1,
+    texture: neptuneTexture,
   },
 ];
 
@@ -65,18 +114,50 @@ window.addEventListener("resize", () => {
 
 let scene = new THREE.Scene();
 
-let planetsMesh = [];
+// PLANETS
 
+let planetsMesh = [];
+let nextCenter = 0;
+let gap = 0;
 planetsData.map((planet) => {
   let planetGeometry = new THREE.SphereGeometry(planet.radius, 100, 100);
-  let planetMaterial = new THREE.MeshStandardMaterial({ map: planet.texture });
+  let planetMaterial = new THREE.MeshStandardMaterial({
+    map: planet.texture,
+  });
 
+  planetMaterial.bumpMap = planet.bumpTexture;
+  planetMaterial.bumScale = 1;
   let planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
-
+  let currCenter = nextCenter;
+  gap = planet.name !== "Sun" ? planet.radius * 3 : 5;
   planetsMesh.push(planetMesh);
-  planetMesh.position.x = planet.x;
+  planetMesh.position.x = currCenter;
+  planetMesh.rotation.x = 0.2;
   scene.add(planetMesh);
+
+  nextCenter = currCenter - (1 / 2) * planet.radius - gap;
 });
+
+// SATURN RING
+
+const saturnRingGeometry = new THREE.TorusGeometry(1.5, 0.21, 2, 100);
+const saturnRingMaterial = new THREE.MeshBasicMaterial({
+  map: saturnRingTexture,
+});
+const saturnRing = new THREE.Mesh(saturnRingGeometry, saturnRingMaterial);
+
+saturnRing.position.set(planetsMesh[6].position.x, 0, 0);
+saturnRing.rotation.x = Math.PI / 2;
+scene.add(saturnRing);
+
+// MOON
+let moonGeometry = new THREE.SphereGeometry(0.1, 100, 100);
+let moonMaterial = new THREE.MeshStandardMaterial({
+  map: moonTexture,
+});
+let moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
+
+
 
 // CAMERA
 let camera = new THREE.PerspectiveCamera(
@@ -85,19 +166,19 @@ let camera = new THREE.PerspectiveCamera(
   0.01,
   100
 );
-camera.position.x = -10;
-camera.position.z = 20;
-
-camera.lookAt(planetsMesh[4]);
+camera.position.z = 50;
+// camera.lookAt()
 
 // LIGHT
 
-let directionalLight = new THREE.DirectionalLight("#ffffff", 2);
+let directionalLight = new THREE.DirectionalLight("#ffffff", 1.8);
 
 directionalLight.position.x = 6;
+
+directionalLight.position.z = 1;
 scene.add(directionalLight);
 
-let ambientLight = new THREE.AmbientLight("#ffffff", 1);
+let ambientLight = new THREE.AmbientLight("#ffffff", 0.5);
 scene.add(ambientLight);
 
 // DAT GUI
@@ -120,9 +201,12 @@ let prevTime = Date.now();
 let animate = () => {
   let currTime = Date.now();
   let deltaTime = currTime - prevTime;
-  planetsMesh.map((planet) => {
-    planet.rotation.y = deltaTime * 0.0001 * Math.PI;
+  planetsMesh.map((planet, idx) => {
+    if (planetsData[idx].name !== "Sun")
+      planet.rotation.y = deltaTime * 0.0001 * Math.PI;
   });
+
+  saturnRing.rotation.z = deltaTime * 0.0001 * Math.PI;
   renderer.render(scene, camera);
   controls.update();
   requestAnimationFrame(animate);
