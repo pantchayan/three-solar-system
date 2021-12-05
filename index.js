@@ -21,8 +21,11 @@ let venusBumpsTexture = textureLoader.load(
 
 let earthTexture = textureLoader.load("./assets/solar-system/earthmap1k.jpg");
 let earthNormal = textureLoader.load("./assets/earth-normal.tif");
+// let earthBumpsTexture = textureLoader.load(
+//   "./assests/solar-system/earthbump1k.jpg"
+// );
 let earthBumpsTexture = textureLoader.load(
-  "./assests/solar-system/earthbump1k.jpg"
+  "./assets/solar-system/earthbump.jpg"
 );
 
 let moonTexture = textureLoader.load("./assets/solar-system/moonmap1k.jpg");
@@ -114,6 +117,8 @@ window.addEventListener("resize", () => {
 
 let scene = new THREE.Scene();
 
+scene.background = milkywayTexture;
+
 // PLANETS
 
 let planetsMesh = [];
@@ -126,16 +131,25 @@ planetsData.map((planet) => {
   });
 
   planetMaterial.bumpMap = planet.bumpTexture;
-  planetMaterial.bumScale = 1;
+  planetMaterial.bumpScale = 0.3;
+  planetMaterial.roughness = 1;
+  planetMaterial.metalness = 0;
   let planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
   let currCenter = nextCenter;
-  gap = planet.name !== "Sun" ? planet.radius * 3 : 5;
+  gap = planet.name !== "Sun" ? planet.radius * 5 : 10;
+
   planetsMesh.push(planetMesh);
   planetMesh.position.x = currCenter;
   planetMesh.rotation.x = 0.2;
+  planetMesh.name = planet.name;
+
+  // if (planet.name === "Sun") {
+  //   planetMesh.layers.set(1);
+  // }
   scene.add(planetMesh);
 
   nextCenter = currCenter - (1 / 2) * planet.radius - gap;
+  if (planet.name === "Mars") nextCenter -= 2;
 });
 
 // SATURN RING
@@ -147,7 +161,7 @@ const saturnRingMaterial = new THREE.MeshBasicMaterial({
 const saturnRing = new THREE.Mesh(saturnRingGeometry, saturnRingMaterial);
 
 saturnRing.position.set(planetsMesh[6].position.x, 0, 0);
-saturnRing.rotation.x = Math.PI / 2;
+saturnRing.rotation.x = Math.PI / 2 + 0.5;
 scene.add(saturnRing);
 
 // MOON
@@ -155,9 +169,13 @@ let moonGeometry = new THREE.SphereGeometry(0.1, 100, 100);
 let moonMaterial = new THREE.MeshStandardMaterial({
   map: moonTexture,
 });
+moonMaterial.bumpMap = moonBumpsTexture;
+moonMaterial.bumpScale = 0.3;
+
 let moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
-
-
+moonMesh.position.x = planetsMesh[3].position.x - 1;
+moonMesh.position.y = 0.5;
+scene.add(moonMesh);
 
 // CAMERA
 let camera = new THREE.PerspectiveCamera(
@@ -166,20 +184,27 @@ let camera = new THREE.PerspectiveCamera(
   0.01,
   100
 );
-camera.position.z = 50;
-// camera.lookAt()
+camera.position.x = -7;
+camera.position.z = 5;
 
 // LIGHT
 
-let directionalLight = new THREE.DirectionalLight("#ffffff", 1.8);
+let directionalLight = new THREE.DirectionalLight("#ffffff", 1.1);
 
-directionalLight.position.x = 6;
+directionalLight.position.x = 4;
 
 directionalLight.position.z = 1;
 scene.add(directionalLight);
 
-let ambientLight = new THREE.AmbientLight("#ffffff", 0.5);
+let ambientLight = new THREE.AmbientLight("#ffffff", 0.3);
 scene.add(ambientLight);
+
+const spotLight = new THREE.SpotLight(0xffffff);
+spotLight.position.set(-10, 0, 0);
+scene.add(spotLight);
+
+// const spotLightHelper = new THREE.SpotLightHelper( spotLight );
+// scene.add( spotLightHelper );
 
 // DAT GUI
 let gui = new dat.GUI({ width: 400 });
@@ -195,7 +220,28 @@ scene.add(axesHelper);
 
 renderer.render(scene, camera);
 
-let controls = new OrbitControls(camera, renderer.domElement);
+/**
+ * Raycaster
+ */
+const raycaster = new THREE.Raycaster();
+let currentIntersect = null;
+const rayOrigin = new THREE.Vector3(-3, 0, 0);
+const rayDirection = new THREE.Vector3(10, 0, 0);
+rayDirection.normalize();
+
+/**
+ * Mouse
+ */
+const mouse = new THREE.Vector2();
+
+window.addEventListener("mousemove", (event) => {
+  mouse.x = (event.clientX / sizes.width) * 2 - 1;
+  mouse.y = -(event.clientY / sizes.height) * 2 + 1;
+});
+
+// raycaster.set(rayOrigin, rayDirection)
+
+// let controls = new OrbitControls(camera, renderer.domElement);
 
 let prevTime = Date.now();
 let animate = () => {
@@ -205,11 +251,56 @@ let animate = () => {
     if (planetsData[idx].name !== "Sun")
       planet.rotation.y = deltaTime * 0.0001 * Math.PI;
   });
-
+  moonMesh.rotation.y = deltaTime * 0.0001 * Math.PI;
   saturnRing.rotation.z = deltaTime * 0.0001 * Math.PI;
+
+  // Cast a fixed ray
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(planetsMesh);
+
+  if (intersects.length) {
+    if (!currentIntersect) {
+      // console.log("mouse enter @ ", intersects[0]);
+      if (intersects[0].object.name !== "Sun")
+        intersects[0].object.scale.set(1.25, 1.25, 1.25);
+
+      if (intersects[0].object.name === "Saturn") {
+        saturnRing.scale.set(1.25, 1.25, 1.25);
+        // console.log("HERE");
+      }
+
+      if (intersects[0].object.name === "Earth") {
+        // console.log(moonMesh);
+      }
+    }
+
+    currentIntersect = intersects[0];
+  } else {
+    if (currentIntersect) {
+      // console.log("mouse leave");
+
+      currentIntersect.object.scale.set(1, 1, 1);
+
+      if (currentIntersect.object.name === "Saturn")
+        saturnRing.scale.set(1, 1, 1);
+    }
+
+    currentIntersect = null;
+  }
+
   renderer.render(scene, camera);
-  controls.update();
+  // controls.update();
   requestAnimationFrame(animate);
 };
 
 animate();
+
+document.addEventListener("mousewheel", (e) => {
+  camera.position.x -= e.deltaY * 0.001;
+  // prevent scrolling beyond a min/max value
+  camera.position.clampScalar(-50, 10);
+});
+
+window.addEventListener("scroll", (e) => {
+  console.log("Scrolled");
+});
