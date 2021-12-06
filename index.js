@@ -7,8 +7,8 @@ const canvas = document.querySelector("canvas");
 // TEXTURES
 const textureLoader = new THREE.TextureLoader();
 
-let milkywayTexture = textureLoader.load("./assets/milky-way.jpg");
-let sunTexture = textureLoader.load("./assets/sun.jpg");
+let milkywayTexture = textureLoader.load("./assets/solar-system/milky-way.jpg");
+let sunTexture = textureLoader.load("./assets/solar-system/sun.jpg");
 let mercuryTexture = textureLoader.load("./assets/solar-system/mercurymap.jpg");
 let mercuryBumpsTexture = textureLoader.load(
   "./assets/solar-system/mercurybump.jpg"
@@ -20,12 +20,11 @@ let venusBumpsTexture = textureLoader.load(
 );
 
 let earthTexture = textureLoader.load("./assets/solar-system/earthmap1k.jpg");
-let earthNormal = textureLoader.load("./assets/earth-normal.tif");
-// let earthBumpsTexture = textureLoader.load(
-//   "./assests/solar-system/earthbump1k.jpg"
-// );
 let earthBumpsTexture = textureLoader.load(
   "./assets/solar-system/earthbump.jpg"
+);
+let earthCloudTexture = textureLoader.load(
+  "./assets/solar-system/earthCloud.png"
 );
 
 let moonTexture = textureLoader.load("./assets/solar-system/moonmap1k.jpg");
@@ -41,10 +40,10 @@ let marsBumpsTexture = textureLoader.load(
 let jupiterTexture = textureLoader.load("./assets/solar-system/jupitermap.jpg");
 let saturnTexture = textureLoader.load("./assets/solar-system/saturnmap.jpg");
 let saturnRingTexture = textureLoader.load(
-  "./assets//solar-system/saturnringcolor.jpg"
+  "./assets/solar-system/saturnringcolor.jpg"
 );
-let uranusTexture = textureLoader.load("./assets/uranus.jpg");
-let neptuneTexture = textureLoader.load("./assets/neptune.jpg");
+let uranusTexture = textureLoader.load("./assets/solar-system/uranus.jpg");
+let neptuneTexture = textureLoader.load("./assets/solar-system/neptune.jpg");
 
 let x = -1.5;
 let planetsData = [
@@ -66,7 +65,6 @@ let planetsData = [
     radius: 0.8,
     texture: earthTexture,
     bumpTexture: earthBumpsTexture,
-    normalTexture: earthNormal,
   },
   {
     name: "Mars",
@@ -119,19 +117,19 @@ let scene = new THREE.Scene();
 
 scene.background = milkywayTexture;
 
-// PLANETS
+// PLANETS AND SUN
 
 let planetsMesh = [];
 let nextCenter = 0;
 let gap = 0;
 planetsData.map((planet) => {
-  let planetGeometry = new THREE.SphereGeometry(planet.radius, 100, 100);
+  let planetGeometry = new THREE.SphereBufferGeometry(planet.radius, 100, 100);
   let planetMaterial = new THREE.MeshStandardMaterial({
     map: planet.texture,
   });
 
   planetMaterial.bumpMap = planet.bumpTexture;
-  planetMaterial.bumpScale = 0.3;
+  planetMaterial.bumpScale = 0.01;
   planetMaterial.roughness = 1;
   planetMaterial.metalness = 0;
   let planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
@@ -153,29 +151,72 @@ planetsData.map((planet) => {
 });
 
 // SATURN RING
+let makeSaturnRing = () => {
+  const saturnRingGeometry = new THREE.RingBufferGeometry(1.8, 1.3, 64);
 
-const saturnRingGeometry = new THREE.TorusGeometry(1.5, 0.21, 2, 100);
-const saturnRingMaterial = new THREE.MeshBasicMaterial({
-  map: saturnRingTexture,
-});
-const saturnRing = new THREE.Mesh(saturnRingGeometry, saturnRingMaterial);
+  // var pos = saturnRingGeometry.attributes.position;
+  // var v3 = new THREE.Vector3();
+  // console.log(saturnRingGeometry.attributes)
+  // for (let i = 0; i < pos.count; i++){
+  //   v3.fromBufferAttribute(pos, i);
+  //   saturnRingGeometry.attributes.uv.setXY(i, v3.length() < 4 ? 0 : 1, 1);
+  // }
 
-saturnRing.position.set(planetsMesh[6].position.x, 0, 0);
-saturnRing.rotation.x = Math.PI / 2 + 0.5;
-scene.add(saturnRing);
+  console.log(saturnRingGeometry.attributes.uv.setXY);
+
+  const saturnRingMaterial = new THREE.MeshStandardMaterial({
+    map: saturnRingTexture,
+    // color: 0xffffff,
+    side: THREE.DoubleSide,
+    transparent: true,
+    // wireframe:true
+  });
+
+  const saturnRing = new THREE.Mesh(saturnRingGeometry, saturnRingMaterial);
+  saturnRing.position.set(planetsMesh[6].position.x, 0, 0);
+  saturnRing.rotation.x = Math.PI / 2 + 0.5;
+  saturnRing.castShadow = true;
+  saturnRing.receiveShadow = true;
+
+  return saturnRing;
+};
 
 // MOON
-let moonGeometry = new THREE.SphereGeometry(0.1, 100, 100);
-let moonMaterial = new THREE.MeshStandardMaterial({
-  map: moonTexture,
-});
-moonMaterial.bumpMap = moonBumpsTexture;
-moonMaterial.bumpScale = 0.3;
+let makeMoon = () => {
+  let moonGeometry = new THREE.SphereGeometry(0.1, 100, 100);
+  let moonMaterial = new THREE.MeshStandardMaterial({
+    map: moonTexture,
+  });
+  moonMaterial.bumpMap = moonBumpsTexture;
+  moonMaterial.bumpScale = 0.01;
 
-let moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
-moonMesh.position.x = planetsMesh[3].position.x - 1;
-moonMesh.position.y = 0.5;
+  let moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
+  moonMesh.position.x = planetsMesh[3].position.x - 1;
+  moonMesh.position.y = 0.5;
+  return moonMesh;
+};
+
+// EARTH CLOUD
+let makeEarthClouds = () => {
+  let earthCloudGeometry = new THREE.SphereBufferGeometry(0.81, 100, 100);
+  let earthCloudMaterial = new THREE.MeshStandardMaterial({
+    map: earthCloudTexture,
+    transparent: true,
+  });
+
+  let earthCloudMesh = new THREE.Mesh(earthCloudGeometry, earthCloudMaterial);
+  earthCloudMesh.position.x = planetsMesh[3].position.x;
+  return earthCloudMesh;
+};
+
+let moonMesh = makeMoon();
 scene.add(moonMesh);
+
+let saturnRing = makeSaturnRing();
+scene.add(saturnRing);
+
+let earthCloudMesh = makeEarthClouds();
+scene.add(earthCloudMesh);
 
 // CAMERA
 let camera = new THREE.PerspectiveCamera(
@@ -184,7 +225,7 @@ let camera = new THREE.PerspectiveCamera(
   0.01,
   100
 );
-camera.position.x = -7;
+camera.position.x = -18; // -7
 camera.position.z = 5;
 
 // LIGHT
@@ -251,6 +292,8 @@ let animate = () => {
     if (planetsData[idx].name !== "Sun")
       planet.rotation.y = deltaTime * 0.0001 * Math.PI;
   });
+
+  earthCloudMesh.rotation.y = deltaTime * 0.00007 * Math.PI;
   moonMesh.rotation.y = deltaTime * 0.0001 * Math.PI;
   saturnRing.rotation.z = deltaTime * 0.0001 * Math.PI;
 
@@ -269,9 +312,9 @@ let animate = () => {
         // console.log("HERE");
       }
 
-      if (intersects[0].object.name === "Earth") {
-        // console.log(moonMesh);
-      }
+      if (intersects[0].object.name === "Earth")
+        earthCloudMesh.scale.set(1.25, 1.25, 1.25);
+
     }
 
     currentIntersect = intersects[0];
@@ -283,6 +326,9 @@ let animate = () => {
 
       if (currentIntersect.object.name === "Saturn")
         saturnRing.scale.set(1, 1, 1);
+
+      if (currentIntersect.object.name === "Earth")
+        earthCloudMesh.scale.set(1, 1, 1);
     }
 
     currentIntersect = null;
@@ -299,8 +345,4 @@ document.addEventListener("mousewheel", (e) => {
   camera.position.x -= e.deltaY * 0.001;
   // prevent scrolling beyond a min/max value
   camera.position.clampScalar(-50, 10);
-});
-
-window.addEventListener("scroll", (e) => {
-  console.log("Scrolled");
 });
