@@ -346,3 +346,9 @@ document.addEventListener("mousewheel", (e) => {
   // prevent scrolling beyond a min/max value
   camera.position.clampScalar(-50, 10);
 });
+
+document.addEventListener('touchmove', () => {
+  camera.position.x -= e.deltaY * 0.001;
+  // prevent scrolling beyond a min/max value
+  camera.position.clampScalar(-50, 10);
+})
