@@ -97,7 +97,9 @@ let planetsData = [
 
 // RENDERER
 const renderer = new THREE.WebGLRenderer({ canvas });
-
+// renderer.shadowMapEnabled = true;
+// // to antialias the shadow
+// renderer.shadowMapType = THREE.PCFSoftShadowMap;
 renderer.setSize(sizes.width, sizes.height);
 
 window.addEventListener("resize", () => {
@@ -141,6 +143,8 @@ planetsData.map((planet) => {
   planetMesh.rotation.x = 0.2;
   planetMesh.name = planet.name;
 
+  planetMesh.castShadow = true;
+  planetMesh.receiveShadow = true;
   // if (planet.name === "Sun") {
   //   planetMesh.layers.set(1);
   // }
@@ -161,8 +165,6 @@ let makeSaturnRing = () => {
   //   v3.fromBufferAttribute(pos, i);
   //   saturnRingGeometry.attributes.uv.setXY(i, v3.length() < 4 ? 0 : 1, 1);
   // }
-
-  console.log(saturnRingGeometry.attributes.uv.setXY);
 
   const saturnRingMaterial = new THREE.MeshStandardMaterial({
     map: saturnRingTexture,
@@ -206,6 +208,7 @@ let makeEarthClouds = () => {
 
   let earthCloudMesh = new THREE.Mesh(earthCloudGeometry, earthCloudMaterial);
   earthCloudMesh.position.x = planetsMesh[3].position.x;
+  earthCloudMesh.castShadow = true;
   return earthCloudMesh;
 };
 
@@ -226,15 +229,13 @@ let camera = new THREE.PerspectiveCamera(
   100
 );
 camera.position.x = -18; // -7
-camera.position.z = 5;
-
+camera.position.z = 4;
 // LIGHT
 
 let directionalLight = new THREE.DirectionalLight("#ffffff", 1.1);
 
 directionalLight.position.x = 4;
 
-directionalLight.position.z = 1;
 scene.add(directionalLight);
 
 let ambientLight = new THREE.AmbientLight("#ffffff", 0.3);
@@ -244,8 +245,10 @@ const spotLight = new THREE.SpotLight(0xffffff);
 spotLight.position.set(-10, 0, 0);
 scene.add(spotLight);
 
-// const spotLightHelper = new THREE.SpotLightHelper( spotLight );
-// scene.add( spotLightHelper );
+let k = new THREE.DirectionalLightHelper(directionalLight, 10);
+scene.add(k);
+const spotLightHelper = new THREE.SpotLightHelper(spotLight);
+scene.add(spotLightHelper);
 
 // DAT GUI
 let gui = new dat.GUI({ width: 400 });
@@ -280,6 +283,54 @@ window.addEventListener("mousemove", (event) => {
   mouse.y = -(event.clientY / sizes.height) * 2 + 1;
 });
 
+window.addEventListener("click", () => {
+  if (currentIntersect) {
+    console.log(currentIntersect.object.name);
+    gsap.to(currentIntersect.object.scale, {
+      delay: 0.1,
+      duration: 1,
+      x: 0.8,
+      y: 0.8,
+      z: 0.8,
+    });
+    gsap.to(currentIntersect.object.rotation, {
+      delay: 0.1,
+      duration: 1,
+      y: currentIntersect.object.rotation.y + 6.28,
+    });
+
+    if (currentIntersect.object.name === "Earth") {
+      gsap.to(earthCloudMesh.scale, {
+        delay: 0.1,
+        duration: 1,
+        x: 0.8,
+        y: 0.8,
+        z: 0.8,
+      });
+      gsap.to(earthCloudMesh.rotation, {
+        delay: 0.1,
+        duration: 1,
+        y: earthCloudMesh.rotation.y + 6.28,
+      });
+    }
+
+    if (currentIntersect.object.name === "Saturn") {
+      gsap.to(saturnRing.scale, {
+        delay: 0.1,
+        duration: 1,
+        x: 0.8,
+        y: 0.8,
+        z: 0.8,
+      });
+      gsap.to(saturnRing.rotation, {
+        delay: 0.1,
+        duration: 1,
+        z: saturnRing.rotation.z + 6.28,
+      });
+    }
+  }
+});
+
 // raycaster.set(rayOrigin, rayDirection)
 
 // let controls = new OrbitControls(camera, renderer.domElement);
@@ -290,7 +341,11 @@ let animate = () => {
   let deltaTime = currTime - prevTime;
   planetsMesh.map((planet, idx) => {
     if (planetsData[idx].name !== "Sun")
-      planet.rotation.y = deltaTime * 0.0001 * Math.PI;
+      if (
+        currentIntersect === null ||
+        currentIntersect.object.name !== planetsData[idx].name
+      )
+        planet.rotation.y = deltaTime * 0.0001 * Math.PI;
   });
 
   earthCloudMesh.rotation.y = deltaTime * 0.00007 * Math.PI;
@@ -304,17 +359,32 @@ let animate = () => {
   if (intersects.length) {
     if (!currentIntersect) {
       // console.log("mouse enter @ ", intersects[0]);
-      if (intersects[0].object.name !== "Sun")
-        intersects[0].object.scale.set(1.25, 1.25, 1.25);
-
+      if (intersects[0].object.name !== "Sun") {
+        gsap.to(intersects[0].object.scale, {
+          duration: 0.7,
+          x: 1.25,
+          y: 1.25,
+          z: 1.25,
+        });
+        // intersects[0].object.scale.set(1.25, 1.25, 1.25);
+      }
       if (intersects[0].object.name === "Saturn") {
-        saturnRing.scale.set(1.25, 1.25, 1.25);
+        gsap.to(saturnRing.scale, {
+          duration: 0.7,
+          x: 1.25,
+          y: 1.25,
+          z: 1.25,
+        });
         // console.log("HERE");
       }
 
       if (intersects[0].object.name === "Earth")
-        earthCloudMesh.scale.set(1.25, 1.25, 1.25);
-
+        gsap.to(earthCloudMesh.scale, {
+          duration: 0.7,
+          x: 1.25,
+          y: 1.25,
+          z: 1.25,
+        });
     }
 
     currentIntersect = intersects[0];
@@ -322,13 +392,28 @@ let animate = () => {
     if (currentIntersect) {
       // console.log("mouse leave");
 
-      currentIntersect.object.scale.set(1, 1, 1);
+      gsap.to(currentIntersect.object.scale, {
+        duration: 0.5,
+        x: 1,
+        y: 1,
+        z: 1,
+      });
 
       if (currentIntersect.object.name === "Saturn")
-        saturnRing.scale.set(1, 1, 1);
+        gsap.to(saturnRing.scale, {
+          duration: 0.5,
+          x: 1,
+          y: 1,
+          z: 1,
+        });
 
       if (currentIntersect.object.name === "Earth")
-        earthCloudMesh.scale.set(1, 1, 1);
+        gsap.to(earthCloudMesh.scale, {
+          duration: 0.5,
+          x: 1,
+          y: 1,
+          z: 1,
+        });
     }
 
     currentIntersect = null;
@@ -344,11 +429,62 @@ animate();
 document.addEventListener("mousewheel", (e) => {
   camera.position.x -= e.deltaY * 0.001;
   // prevent scrolling beyond a min/max value
-  camera.position.clampScalar(-50, 10);
+  camera.position.clampScalar(mode == 1 ? -50 : -70, 10);
 });
 
-document.addEventListener('touchmove', () => {
-  camera.position.x -= e.deltaY * 0.001;
-  // prevent scrolling beyond a min/max value
-  camera.position.clampScalar(-50, 10);
-})
+document.addEventListener("touchmove", (e) => {
+  console.log("touched");
+  document.dispatchEvent("mousewheel");
+});
+
+/**
+ * Fullscreen
+ */
+window.addEventListener("dblclick", () => {
+  const fullscreenElement =
+    document.fullscreenElement || document.webkitFullscreenElement;
+
+  if (!fullscreenElement) {
+    if (canvas.requestFullscreen) {
+      canvas.requestFullscreen();
+    } else if (canvas.webkitRequestFullscreen) {
+      canvas.webkitRequestFullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+  }
+});
+
+let mode = 1;
+document.getElementById("switch").addEventListener("click", () => {
+  if (mode == 0) {
+    gsap.to(camera.position, {
+      delay: 0,
+      duration: 1,
+      x: -18,
+      y:0,
+      z:4
+    });
+  } else if (mode == 1) {
+    camera.lookAt(planetsMesh[0].position);
+    gsap.to(camera.lookAt, {
+      duration:1,
+      x:planetsMesh[0].position.x,
+      y:planetsMesh[0].position.y,
+      z:planetsMesh[0].position.z
+    })
+    gsap.to(camera.position, {
+      delay: 1,
+      duration: 1,
+      x: -60,
+      y: 0,
+      z: 4,
+    });
+    mode = (mode + 1) % 2;
+  }
+  console.log("Clicked");
+});
