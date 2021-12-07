@@ -133,6 +133,7 @@ planetsData.map((planet) => {
     planet.name === "Sun"
       ? new THREE.MeshBasicMaterial({
           map: planet.texture,
+          side: THREE.DoubleSide
         })
       : new THREE.MeshStandardMaterial({
           map: planet.texture,
