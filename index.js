@@ -119,6 +119,8 @@ let scene = new THREE.Scene();
 
 scene.background = milkywayTexture;
 
+scene.add(new THREE.GridHelper(100, 100, 0x888888, 0x444444));
+
 // PLANETS AND SUN
 
 let planetsMesh = [];
@@ -126,9 +128,15 @@ let nextCenter = 0;
 let gap = 0;
 planetsData.map((planet) => {
   let planetGeometry = new THREE.SphereBufferGeometry(planet.radius, 100, 100);
-  let planetMaterial = new THREE.MeshStandardMaterial({
-    map: planet.texture,
-  });
+
+  let planetMaterial =
+    planet.name === "Sun"
+      ? new THREE.MeshBasicMaterial({
+          map: planet.texture,
+        })
+      : new THREE.MeshStandardMaterial({
+          map: planet.texture,
+        });
 
   planetMaterial.bumpMap = planet.bumpTexture;
   planetMaterial.bumpScale = 0.01;
@@ -230,6 +238,8 @@ let camera = new THREE.PerspectiveCamera(
 );
 camera.position.x = -18; // -7
 camera.position.z = 4;
+camera.rotation.order = "YXZ";
+
 // LIGHT
 
 let directionalLight = new THREE.DirectionalLight("#ffffff", 1.1);
@@ -245,17 +255,25 @@ const spotLight = new THREE.SpotLight(0xffffff);
 spotLight.position.set(-10, 0, 0);
 scene.add(spotLight);
 
-let k = new THREE.DirectionalLightHelper(directionalLight, 10);
-scene.add(k);
+let directionalLightHelper = new THREE.DirectionalLightHelper(
+  directionalLight,
+  10
+);
+scene.add(directionalLightHelper);
 const spotLightHelper = new THREE.SpotLightHelper(spotLight);
 scene.add(spotLightHelper);
 
 // DAT GUI
 let gui = new dat.GUI({ width: 400 });
 const cameraFolder = gui.addFolder("Camera");
-cameraFolder.add(camera.position, "z", -100, 100);
-cameraFolder.add(camera.position, "y", -100, 100);
-cameraFolder.add(camera.position, "x", -100, 100);
+const cameraPositionFolder = cameraFolder.addFolder("Camera position");
+cameraPositionFolder.add(camera.position, "z", -100, 100);
+cameraPositionFolder.add(camera.position, "y", -100, 100);
+cameraPositionFolder.add(camera.position, "x", -100, 100);
+const cameraRotationFolder = cameraFolder.addFolder("Camera rotation");
+cameraRotationFolder.add(camera.rotation, "z", -6.28, 6.28);
+cameraRotationFolder.add(camera.rotation, "y", -6.28, 6.28);
+cameraRotationFolder.add(camera.rotation, "x", -6.28, 6.28);
 cameraFolder.open();
 
 // AXIS HELPER
@@ -310,7 +328,7 @@ window.addEventListener("click", () => {
       gsap.to(earthCloudMesh.rotation, {
         delay: 0.1,
         duration: 1,
-        y: earthCloudMesh.rotation.y + 6.28,
+        y: earthCloudMesh.rotation.y + 5,
       });
     }
 
@@ -348,7 +366,9 @@ let animate = () => {
         planet.rotation.y = deltaTime * 0.0001 * Math.PI;
   });
 
-  earthCloudMesh.rotation.y = deltaTime * 0.00007 * Math.PI;
+  if (currentIntersect === null || currentIntersect.object.name !== "Earth") {
+    earthCloudMesh.rotation.y = deltaTime * 0.00007 * Math.PI;
+  }
   moonMesh.rotation.y = deltaTime * 0.0001 * Math.PI;
   saturnRing.rotation.z = deltaTime * 0.0001 * Math.PI;
 
@@ -415,7 +435,6 @@ let animate = () => {
           z: 1,
         });
     }
-
     currentIntersect = null;
   }
 
@@ -462,21 +481,33 @@ window.addEventListener("dblclick", () => {
 let mode = 1;
 document.getElementById("switch").addEventListener("click", () => {
   if (mode == 0) {
+    // camera.lookAt(planetsMesh[0].position);
     gsap.to(camera.position, {
-      delay: 0,
       duration: 1,
-      x: -18,
-      y:0,
-      z:4
+      x: -7,
     });
+    gsap.to(camera.position, {
+      delay: 1,
+      duration: 1,
+      y: 0,
+      z: 4,
+    });
+    gsap.to(camera.rotation, {
+      delay: 1,
+      duration: 1,
+      x: 0,
+      y: 0,
+      z: 0,
+    });
+    mode = (mode + 1) % 4;
   } else if (mode == 1) {
-    camera.lookAt(planetsMesh[0].position);
-    gsap.to(camera.lookAt, {
-      duration:1,
-      x:planetsMesh[0].position.x,
-      y:planetsMesh[0].position.y,
-      z:planetsMesh[0].position.z
-    })
+    // camera.lookAt(planetsMesh[0].position);
+    gsap.to(camera.rotation, {
+      duration: 1,
+      x: 0,
+      y: -80 * 0.0174,
+      z: 0,
+    });
     gsap.to(camera.position, {
       delay: 1,
       duration: 1,
@@ -484,7 +515,45 @@ document.getElementById("switch").addEventListener("click", () => {
       y: 0,
       z: 4,
     });
-    mode = (mode + 1) % 2;
+    mode = (mode + 1) % 4;
+  } else if (mode == 2) {
+    // camera.lookAt(planetsMesh[0].position);
+    gsap.to(camera.rotation, {
+      duration: 1,
+      x: 0,
+      y: (-1 * Math.PI) / 2,
+      z: 0,
+    });
+    gsap.to(camera.position, {
+      duration: 1,
+      x: -60,
+      y: 4,
+      z: 0,
+    });
+    gsap.to(camera.rotation, {
+      delay: 1,
+      duration: 1,
+      x: -0.35,
+    });
+
+    mode = (mode + 1) % 4;
+  } else if (mode == 3) {
+    // camera.lookAt(planetsMesh[0].position);
+    gsap.to(camera.position, {
+      duration: 1,
+      x: -7,
+    });
+    gsap.to(camera.position, {
+      delay: 1,
+      duration: 1,
+      y: 3,
+    });
+    gsap.to(camera.rotation, {
+      delay: 1,
+      duration: 1,
+      y: Math.PI / 2,
+    });
+    mode = (mode + 1) % 4;
   }
   console.log("Clicked");
 });
