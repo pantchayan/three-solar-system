@@ -378,6 +378,8 @@ let animate = () => {
 
   if (intersects.length) {
     if (!currentIntersect) {
+      document.getElementById('hover-name').innerHTML = `<h1>${intersects[0].object.name}</h1>`
+      console.log(document.getElementById('hover-name'))
       // console.log("mouse enter @ ", intersects[0]);
       if (intersects[0].object.name !== "Sun") {
         gsap.to(intersects[0].object.scale, {
@@ -435,6 +437,8 @@ let animate = () => {
           z: 1,
         });
     }
+
+    document.getElementById('hover-name').innerHTML = `<h1></h1>`
     currentIntersect = null;
   }
 

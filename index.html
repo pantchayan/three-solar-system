@@ -8,6 +8,15 @@
     <title>Solar System in THREE.js</title>
 </head>
 <style>
+    @font-face {
+        font-family: 'abnesregular';
+        src: url('assets/fonts/abnes-webfont.woff2') format('woff2'),
+            url('assets/fonts/abnes-webfont.woff') format('woff');
+        font-weight: normal;
+        font-style: normal;
+
+    }
+
     * {
         margin: 0;
         padding: 0;
@@ -18,24 +27,60 @@
         overflow: hidden;
     }
 
-    .options{
+    canvas{
         position: absolute;
-        top: 0;
-        z-index: 10;
+        top:0;
+        left:0;
+        outline: none;
+        z-index: -1;
     }
 
-    .options button{
+    .content{
+        height: 100vh;
+    }
+
+    #hover-name{
+        display: flex;
+        justify-content: center;
+        margin-top: 650px;
+        font-family: 'abnesregular';
+        color: white;
+    }
+
+    #switch{
+        background-color: transparent;
+        outline: none;
+        border: 0;
+        
+        font-family: 'abnesregular';
+        color: white;
+        text-transform: capitalize;
+        font-weight: 600;
+    }
+
+    #switch{
         cursor: pointer;
     }
+
+    .hide{
+        display: none;
+    }
+    
 </style>
 
 <body>
 
     <canvas></canvas>
+    <div class="content">
+        <div class="options">
+            <button id="switch">switch view</button>
+        </div>
 
-    <div class="options">
-        <button id="switch">switch view</button>
+        <div id="hover-name" class="hide">
+            <h1>SAMPLE</h1>
+        </div>
     </div>
+
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"
         integrity="sha512-LF8ZB1iTwi4Qvkm4pekHG4a437Y9Af5ZuwbnW4GTbAWQeR2E4KW8WF+xH8b9psevV7wIlDMx1MH9YfPqgKhA/Q=="
