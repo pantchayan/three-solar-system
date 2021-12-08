@@ -13,12 +13,10 @@ let mercuryTexture = textureLoader.load("./assets/solar-system/mercurymap.jpg");
 let mercuryBumpsTexture = textureLoader.load(
   "./assets/solar-system/mercurybump.jpg"
 );
-
 let venusTexture = textureLoader.load("./assets/solar-system/venusmap.jpg");
 let venusBumpsTexture = textureLoader.load(
   "./assets/solar-system/venusbump.jpg"
 );
-
 let earthTexture = textureLoader.load("./assets/solar-system/earthmap1k.jpg");
 let earthBumpsTexture = textureLoader.load(
   "./assets/solar-system/earthbump.jpg"
@@ -26,17 +24,14 @@ let earthBumpsTexture = textureLoader.load(
 let earthCloudTexture = textureLoader.load(
   "./assets/solar-system/earthCloud.png"
 );
-
 let moonTexture = textureLoader.load("./assets/solar-system/moonmap1k.jpg");
 let moonBumpsTexture = textureLoader.load(
   "./assets/solar-system/moonbump1k.jpg"
 );
-
 let marsTexture = textureLoader.load("./assets/solar-system/mars_1k_color.jpg");
 let marsBumpsTexture = textureLoader.load(
   "./assets/solar-system/marsbump1k.jpg"
 );
-
 let jupiterTexture = textureLoader.load("./assets/solar-system/jupitermap.jpg");
 let saturnTexture = textureLoader.load("./assets/solar-system/saturnmap.jpg");
 let saturnRingTexture = textureLoader.load(
@@ -44,8 +39,20 @@ let saturnRingTexture = textureLoader.load(
 );
 let uranusTexture = textureLoader.load("./assets/solar-system/uranus.jpg");
 let neptuneTexture = textureLoader.load("./assets/solar-system/neptune.jpg");
+let particlesTexture = textureLoader.load("/assets/particles/star_01.png");
 
-let x = -1.5;
+let cubeTextureLoader = new THREE.CubeTextureLoader();
+let milkywayCubeMap = cubeTextureLoader.load([
+  './assets/solar-system/milkyway-cubemap/px.png',
+  './assets/solar-system/milkyway-cubemap/nx.png',
+  './assets/solar-system/milkyway-cubemap/py.png',
+  './assets/solar-system/milkyway-cubemap/ny.png',
+  './assets/solar-system/milkyway-cubemap/pz.png',
+  './assets/solar-system/milkyway-cubemap/nz.png',
+])
+
+
+// DATA FOR PLANETS
 let planetsData = [
   { name: "Sun", radius: 5, texture: sunTexture },
   {
@@ -97,9 +104,6 @@ let planetsData = [
 
 // RENDERER
 const renderer = new THREE.WebGLRenderer({ canvas });
-// renderer.shadowMapEnabled = true;
-// // to antialias the shadow
-// renderer.shadowMapType = THREE.PCFSoftShadowMap;
 renderer.setSize(sizes.width, sizes.height);
 
 window.addEventListener("resize", () => {
@@ -117,7 +121,7 @@ window.addEventListener("resize", () => {
 
 let scene = new THREE.Scene();
 
-scene.background = milkywayTexture;
+scene.background = milkywayTexture; // milkywayCubeMap
 
 scene.add(new THREE.GridHelper(100, 100, 0x888888, 0x444444));
 
@@ -133,7 +137,7 @@ planetsData.map((planet) => {
     planet.name === "Sun"
       ? new THREE.MeshBasicMaterial({
           map: planet.texture,
-          side: THREE.DoubleSide
+          side: THREE.DoubleSide,
         })
       : new THREE.MeshStandardMaterial({
           map: planet.texture,
@@ -221,6 +225,24 @@ let makeEarthClouds = () => {
   return earthCloudMesh;
 };
 
+// Making Stars
+let makeStars = () => {
+  // PARTICLES
+
+  let particleGeometry = new THREE.SphereBufferGeometry(70, 32, 63);
+
+  let particleMaterial = new THREE.PointsMaterial();
+  particleMaterial.size = 1;
+  particleMaterial.sizeAttenuation = true;
+  particleMaterial.transparent = true;
+  particleMaterial.alphaMap = particlesTexture;
+  particleMaterial.depthWrite = false;
+
+  let particles = new THREE.Points(particleGeometry, particleMaterial);
+
+  return particles;
+};
+
 let moonMesh = makeMoon();
 scene.add(moonMesh);
 
@@ -229,6 +251,9 @@ scene.add(saturnRing);
 
 let earthCloudMesh = makeEarthClouds();
 scene.add(earthCloudMesh);
+
+// let stars = makeStars();
+// scene.add(stars);
 
 // CAMERA
 let camera = new THREE.PerspectiveCamera(
@@ -353,7 +378,9 @@ window.addEventListener("click", () => {
 // raycaster.set(rayOrigin, rayDirection)
 
 // let controls = new OrbitControls(camera, renderer.domElement);
-
+// controls.enableDamping = true;
+// controls.dampingFactor = 0.5
+// ANIMATION
 let prevTime = Date.now();
 let animate = () => {
   let currTime = Date.now();
@@ -379,8 +406,10 @@ let animate = () => {
 
   if (intersects.length) {
     if (!currentIntersect) {
-      document.getElementById('hover-name').innerHTML = `<h1>${intersects[0].object.name}</h1>`
-      console.log(document.getElementById('hover-name'))
+      document.getElementById(
+        "hover-name"
+      ).innerHTML = `<h1>${intersects[0].object.name}</h1>`;
+      // console.log(document.getElementById("hover-name"));
       // console.log("mouse enter @ ", intersects[0]);
       if (intersects[0].object.name !== "Sun") {
         gsap.to(intersects[0].object.scale, {
@@ -439,7 +468,7 @@ let animate = () => {
         });
     }
 
-    document.getElementById('hover-name').innerHTML = `<h1></h1>`
+    document.getElementById("hover-name").innerHTML = `<h1></h1>`;
     currentIntersect = null;
   }
 
