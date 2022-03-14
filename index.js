@@ -379,7 +379,7 @@ window.addEventListener("click", () => {
 
 // let controls = new OrbitControls(camera, renderer.domElement);
 // controls.enableDamping = true;
-// controls.dampingFactor = 0.5
+// controls.dampingFactor = 0.5;
 // ANIMATION
 let prevTime = Date.now();
 let animate = () => {
@@ -480,7 +480,7 @@ let animate = () => {
 animate();
 
 document.addEventListener("mousewheel", (e) => {
-  camera.position.x -= e.deltaY * 0.001;
+  camera.position.x -= e.deltaY * 0.004;
   // prevent scrolling beyond a min/max value
   camera.position.clampScalar(mode == 1 ? -50 : -70, 10);
 });
